@@ -2,6 +2,7 @@ package com.codepath.campgrounds
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,8 +13,15 @@ import com.bumptech.glide.Glide
 
 private const val TAG = "CampgroundAdapter"
 
-class CampgroundAdapter(private val context: Context, private val campgrounds: List<Campground>) :
-    RecyclerView.Adapter<CampgroundAdapter.ViewHolder>() {
+class CampgroundAdapter(private val context: Context, private val campgrounds: MutableList<Campground>) : RecyclerView.Adapter<CampgroundAdapter.ViewHolder>() {
+
+    // New list to hold the filtered campgrounds
+    private val filteredCampgrounds = mutableListOf<Campground>()
+
+    // Initialize the filtered list with all campgrounds
+    init {
+        filteredCampgrounds.addAll(campgrounds)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(context).inflate(R.layout.item_campground, parent, false)
@@ -22,11 +30,47 @@ class CampgroundAdapter(private val context: Context, private val campgrounds: L
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // TODO: Get the individual campground and bind to holder
-        val campground = campgrounds[position]
+        val campground = filteredCampgrounds[position] // holds the filtered campground now
         holder.bind(campground)
     }
 
-    override fun getItemCount() = campgrounds.size
+    // Returns the size of the filtered list
+    override fun getItemCount() = filteredCampgrounds.size
+
+    // Clean all elements of the recycler and both lists
+    fun clear() {
+        campgrounds.clear()
+        filteredCampgrounds.clear()
+        notifyDataSetChanged()
+    }
+
+    // Add a list of items to the regular list and the filtered list
+    fun addAll(campgroundsList: List<Campground>) {
+        campgrounds.addAll(campgroundsList)
+        filteredCampgrounds.addAll(campgroundsList)
+        notifyDataSetChanged()
+    }
+
+    // Filter that searches through the campgrounds list
+    fun filter(query: String) {
+        filteredCampgrounds.clear()
+        if(query.isEmpty()) {
+            // If the query is empty, show all campgrounds
+            filteredCampgrounds.addAll(campgrounds)
+        }
+        else {
+            // Filter the campgrounds on either, name, description, or location
+            val filteredList = campgrounds.filter { campground ->
+                campground.name?.contains(query, ignoreCase = true) == true ||
+                        campground.description?.contains(query, ignoreCase = true) == true ||
+                        campground.latLong?.contains(query, ignoreCase = true) == true
+            }
+            // Add the filtered campgrounds to the filtered list
+            filteredCampgrounds.addAll(filteredList)
+        }
+        // Update the RecyclerView to show filtered results
+        notifyDataSetChanged()
+    }
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
         View.OnClickListener {
@@ -53,7 +97,7 @@ class CampgroundAdapter(private val context: Context, private val campgrounds: L
 
         override fun onClick(v: View?) {
             // TODO: Get selected campground
-            val campground = campgrounds[absoluteAdapterPosition]
+            val campground = filteredCampgrounds[absoluteAdapterPosition] // uses the filtered list now
 
             // TODO: Navigate to Details screen and pass selected campground
             val intent = Intent(context, DetailActivity::class.java)
